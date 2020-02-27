@@ -178,4 +178,49 @@ void q_sort(queue_t *q)
         return;
     }
     
+    list_ele_t *ptr = q->head;
+	list_ele_t *smallest = ptr;
+	list_ele_t *prev = ptr;
+	list_ele_t *sorted;
+	list_ele_t *unsorted = ptr;
+    char tmp = ptr->value;
+    while (ptr) {
+    	if (tmp > ptr->next->value) {
+    		tmp = ptr->next->value;
+    		prev = ptr;
+    		smallest = ptr->next;
+    	}
+    }
+    if (q->head == smallest) {
+    	unsorted = q->head->next;
+    }
+    q->head = smallest;
+    sorted = smallest;
+    
+    if (prev != smallest) {
+    	prev->next = smallest->next;
+    }
+	
+    for (int i = q->size; i > 1; i--) {
+    	ptr = unsorted;
+    	tmp = ptr->value;
+    	prev = ptr;
+    	while (ptr) {
+    		if (tmp > ptr->next->value) {
+    			tmp = ptr->next->value;
+    			prev = ptr;
+    			smallest = ptr->next;
+    		}
+    		ptr = ptr->next;
+    	}
+    	if (prev != smallest) {
+    		prev->next = smallest->next;
+    	}
+    	if (unsorted == smallest) {
+    		unsorted = unsorted->next;
+    	}
+    	sorted->next = smallest;
+    }
+    smallest->next = NULL;
+    q->tail = smallest;
 }
