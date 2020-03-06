@@ -24,7 +24,7 @@ queue_t *q_new()
 /* Free all storage used by queue */
 void q_free(queue_t *q)
 {
-    ptr = q->head;
+    list_ele_t *ptr = q->head;
     while (ptr) {
         list_ele_t *self;
         self = ptr;
@@ -35,7 +35,6 @@ void q_free(queue_t *q)
         free(self);
     }
     free(q);
-    return 0;
 }
 
 /*
@@ -46,13 +45,14 @@ void q_free(queue_t *q)
  * The function must explicitly allocate space and copy the string into it.
  */
 bool q_insert_head(queue_t *q, char *s)
-{   
+
+{
     list_ele_t *newh;
     newh = malloc(sizeof(list_ele_t));
     if (!newh || !q) {
         return false;
     }
-    
+
     newh->value = strdup(s);
     if (!newh->value) {
         free(newh);
@@ -63,8 +63,8 @@ bool q_insert_head(queue_t *q, char *s)
     q->head = newh;
     if (!q->tail) {
         q->tail = q->head;
-	}
-	q->size++;
+    }
+    q->size++;
     return true;
 }
 
@@ -82,14 +82,14 @@ bool q_insert_tail(queue_t *q, char *s)
     if (!newt || !q) {
         return false;
     }
-    
+
     newt->value = strdup(s);
     if (!newt->value) {
         free(newt);
         return false;
     }
-    
-    if (!q->head){
+
+    if (!q->head) {
         q->head = newt;
         q->tail = newt;
     }
@@ -109,9 +109,10 @@ bool q_insert_tail(queue_t *q, char *s)
  */
 bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
 {
-    list_ele_t *rmhead;
     if (!q || !q->head)
         return false;
+
+    list_ele_t *rmhead = q->head;
 
     if (bufsize > 0 && sp) {
         strncpy(sp, q->head->value, bufsize - 1);
@@ -119,7 +120,7 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
     }
 
     q->head = rmhead->next;
-    q->nr--;
+    q->size--;
     if (rmhead == q->tail)
         q->tail = NULL;
     free(rmhead);
@@ -135,7 +136,7 @@ int q_size(queue_t *q)
     if (!q) {
         return 0;
     }
-    return q->nr;
+    return q->size;
 }
 
 /*
@@ -150,12 +151,11 @@ void q_reverse(queue_t *q)
     if (!q || !q->head) {
         return;
     }
-    
     list_ele_t *pre, *cur, *nex;
     cur = q->head;
     pre = NULL;
     while (cur->next) {
-        nex = cur-next;
+        nex = cur->next;
         nex->next = pre;
         pre = cur;
         cur = nex;
@@ -164,7 +164,6 @@ void q_reverse(queue_t *q)
     q->tail = q->head;
     q->head = cur;
     return;
-    
 }
 
 /*
@@ -174,52 +173,52 @@ void q_reverse(queue_t *q)
  */
 void q_sort(queue_t *q)
 {
-    if (!q || q->size < 2) {
+    if (!q || q->size < 2 || q->head == NULL) {
         return;
     }
-    
     list_ele_t *ptr = q->head;
-	list_ele_t *smallest = ptr;
-	list_ele_t *prev = ptr;
-	list_ele_t *sorted;
-	list_ele_t *unsorted = ptr;
-    char tmp = ptr->value;
+    list_ele_t *smallest = ptr;
+    list_ele_t *prev = ptr;
+    list_ele_t *sorted;
+    list_ele_t *unsorted = ptr;
+    char tmp = *(ptr->value);
     while (ptr) {
-    	if (tmp > ptr->next->value) {
-    		tmp = ptr->next->value;
-    		prev = ptr;
-    		smallest = ptr->next;
-    	}
+        if (tmp > *(ptr->next->value)) {
+            tmp = *(ptr->next->value);
+            prev = ptr;
+            smallest = ptr->next;
+            ptr = ptr->next;
+        }
     }
     if (q->head == smallest) {
-    	unsorted = q->head->next;
+        unsorted = q->head->next;
     }
     q->head = smallest;
     sorted = smallest;
-    
+
     if (prev != smallest) {
-    	prev->next = smallest->next;
+        prev->next = smallest->next;
     }
-	
+
     for (int i = q->size; i > 1; i--) {
-    	ptr = unsorted;
-    	tmp = ptr->value;
-    	prev = ptr;
-    	while (ptr) {
-    		if (tmp > ptr->next->value) {
-    			tmp = ptr->next->value;
-    			prev = ptr;
-    			smallest = ptr->next;
-    		}
-    		ptr = ptr->next;
-    	}
-    	if (prev != smallest) {
-    		prev->next = smallest->next;
-    	}
-    	if (unsorted == smallest) {
-    		unsorted = unsorted->next;
-    	}
-    	sorted->next = smallest;
+        ptr = unsorted;
+        tmp = *(ptr->value);
+        prev = ptr;
+        while (ptr) {
+            if (tmp > *(ptr->next->value)) {
+                tmp = *(ptr->next->value);
+                prev = ptr;
+                smallest = ptr->next;
+            }
+            ptr = ptr->next;
+        }
+        if (prev != smallest) {
+            prev->next = smallest->next;
+        }
+        if (unsorted == smallest) {
+            unsorted = unsorted->next;
+        }
+        sorted->next = smallest;
     }
     smallest->next = NULL;
     q->tail = smallest;
