@@ -4,6 +4,7 @@
 
 #include "harness.h"
 #include "queue.h"
+#include "strnatcmp.h"
 
 /*
  * Create empty queue.
@@ -64,6 +65,7 @@ bool q_insert_head(queue_t *q, char *s)
     if (!q->tail) {
         q->tail = q->head;
     }
+
     q->size++;
     return true;
 }
@@ -89,12 +91,15 @@ bool q_insert_tail(queue_t *q, char *s)
         return false;
     }
 
-    if (!q->head) {
+    if (!q->tail) {
         q->head = newt;
         q->tail = newt;
+    } else {
+        q->tail->next = newt;
+        q->tail = newt;
     }
-    q->tail->next = newt;
-    q->tail = newt;
+
+    newt->next = NULL;
     q->size++;
     return true;
 }
@@ -152,16 +157,17 @@ void q_reverse(queue_t *q)
         return;
     }
     list_ele_t *pre, *cur, *nex;
-    cur = q->head;
     pre = NULL;
-    while (cur->next) {
-        nex = cur->next;
-        nex->next = pre;
+    cur = q->head;
+    nex = cur->next;
+    q->tail = cur;
+    while (nex) {
+        cur->next = pre;
         pre = cur;
         cur = nex;
+        nex = cur->next;
     }
     cur->next = pre;
-    q->tail = q->head;
     q->head = cur;
     return;
 }
@@ -181,10 +187,8 @@ void q_sort(queue_t *q)
     list_ele_t *prev = ptr;
     list_ele_t *sorted;
     list_ele_t *unsorted = ptr;
-    char tmp = *(ptr->value);
     while (ptr) {
-        if (tmp > *(ptr->next->value)) {
-            tmp = *(ptr->next->value);
+        if (strnatcmp(ptr->value, ptr->next->value) > 0) {
             prev = ptr;
             smallest = ptr->next;
             ptr = ptr->next;
@@ -202,11 +206,9 @@ void q_sort(queue_t *q)
 
     for (int i = q->size; i > 1; i--) {
         ptr = unsorted;
-        tmp = *(ptr->value);
         prev = ptr;
         while (ptr) {
-            if (tmp > *(ptr->next->value)) {
-                tmp = *(ptr->next->value);
+            if (strnatcmp(ptr->value, ptr->next->value) > 0) {
                 prev = ptr;
                 smallest = ptr->next;
             }
