@@ -25,6 +25,9 @@ queue_t *q_new()
 /* Free all storage used by queue */
 void q_free(queue_t *q)
 {
+    if (!q) {
+        return;
+    }
     list_ele_t *ptr = q->head;
     while (ptr) {
         list_ele_t *self;
@@ -49,23 +52,24 @@ bool q_insert_head(queue_t *q, char *s)
 
 {
     list_ele_t *newh;
-    newh = malloc(sizeof(list_ele_t));
-    if (!newh || !q) {
+    if (!q) {
         return false;
     }
-
-    newh->value = strdup(s);
+    newh = malloc(sizeof(list_ele_t));
+    if (!newh) {
+        return false;
+    }
+    newh->value = malloc((strlen(s) + 1) * sizeof(char));
     if (!newh->value) {
         free(newh);
         return false;
     }
-
+    memcpy(newh->value, s, (strlen(s) + 1));
     newh->next = q->head;
     q->head = newh;
     if (!q->tail) {
         q->tail = q->head;
     }
-
     q->size++;
     return true;
 }
@@ -79,18 +83,20 @@ bool q_insert_head(queue_t *q, char *s)
  */
 bool q_insert_tail(queue_t *q, char *s)
 {
-    list_ele_t *newt;
-    newt = malloc(sizeof(list_ele_t));
-    if (!newt || !q) {
+    if (!q) {
         return false;
     }
-
-    newt->value = strdup(s);
+    list_ele_t *newt;
+    newt = malloc(sizeof(list_ele_t));
+    if (!newt) {
+        return false;
+    }
+    newt->value = malloc((strlen(s) + 1) * sizeof(char));
     if (!newt->value) {
         free(newt);
         return false;
     }
-
+    memcpy(newt->value, s, (strlen(s) + 1));
     if (!q->tail) {
         q->head = newt;
         q->tail = newt;
@@ -98,7 +104,6 @@ bool q_insert_tail(queue_t *q, char *s)
         q->tail->next = newt;
         q->tail = newt;
     }
-
     newt->next = NULL;
     q->size++;
     return true;
@@ -123,12 +128,13 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
         strncpy(sp, q->head->value, bufsize - 1);
         sp[bufsize - 1] = '\0';
     }
-
     q->head = rmhead->next;
-    q->size--;
-    if (rmhead == q->tail)
+    if (rmhead == q->tail) {
         q->tail = NULL;
+    }
+    free(rmhead->value);
     free(rmhead);
+    q->size--;
     return true;
 }
 
@@ -153,7 +159,7 @@ int q_size(queue_t *q)
  */
 void q_reverse(queue_t *q)
 {
-    if (!q || !q->head) {
+    if (!q || q->size < 2) {
         return;
     }
     list_ele_t *pre, *cur, *nex;
@@ -179,49 +185,48 @@ void q_reverse(queue_t *q)
  */
 void q_sort(queue_t *q)
 {
-    if (!q || q->size < 2 || q->head == NULL) {
+    if (!q || q->size < 2)
         return;
-    }
-    list_ele_t *ptr = q->head;
-    list_ele_t *smallest = ptr;
-    list_ele_t *prev = ptr;
-    list_ele_t *sorted;
-    list_ele_t *unsorted = ptr;
-    while (ptr) {
-        if (strnatcmp(ptr->value, ptr->next->value) > 0) {
-            prev = ptr;
-            smallest = ptr->next;
-            ptr = ptr->next;
-        }
-    }
-    if (q->head == smallest) {
-        unsorted = q->head->next;
-    }
-    q->head = smallest;
-    sorted = smallest;
+    queue_t left, right;
+    left.size = (q->size >> 1) + (q->size & 1);
+    right.size = q->size >> 1;
+    list_ele_t *cur = left.head = q->head;
+    right.tail = q->tail;
 
-    if (prev != smallest) {
-        prev->next = smallest->next;
-    }
+    for (size_t i = 0; i < left.size - 1; i++)
+        cur = cur->next;
 
-    for (int i = q->size; i > 1; i--) {
-        ptr = unsorted;
-        prev = ptr;
-        while (ptr) {
-            if (strnatcmp(ptr->value, ptr->next->value) > 0) {
-                prev = ptr;
-                smallest = ptr->next;
-            }
-            ptr = ptr->next;
-        }
-        if (prev != smallest) {
-            prev->next = smallest->next;
-        }
-        if (unsorted == smallest) {
-            unsorted = unsorted->next;
-        }
-        sorted->next = smallest;
+    left.tail = cur;
+    right.head = cur->next;
+    left.tail->next = right.tail->next = NULL;
+    q->head = q->tail = NULL;
+
+    q_sort(&left);
+    q_sort(&right);
+    q_merge(&left, &right, q);
+}
+
+void q_merge(queue_t *left, queue_t *right, queue_t *q)
+{
+    q->size = left->size + right->size;
+    list_ele_t *l = left->head, *r = right->head;
+    list_ele_t *tem = NULL;
+    if (strnatcmp(left->head->value, right->head->value) < 0) {
+        q->head = left->head;
+    } else {
+        q->head = right->head;
     }
-    smallest->next = NULL;
-    q->tail = smallest;
+    q->tail = q->head;
+    for (size_t i = 0; i < q->size; i++) {
+        if (!r || (l && strnatcmp(l->value, r->value) < 0)) {
+            tem = l;
+            l = l->next;
+        } else {
+            tem = r;
+            r = r->next;
+        }
+        q->tail->next = tem;
+        q->tail = tem;
+    }
+    tem->next = NULL;
 }
